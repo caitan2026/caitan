@@ -2,24 +2,85 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="referrer" content="no-referrer">
-  <title>微信授权入口</title>
+  <title>精英好料 · 微信授权</title>
   <style>
-    body { margin: 0; background: #f6f7f9; color: #283241; font: 16px/1.6 system-ui, sans-serif; }
-    main { max-width: 480px; margin: 15vh auto 0; padding: 24px; text-align: center; overflow-wrap: anywhere; }
-    h1 { font-size: 24px; }
-    button { max-width: 100%; padding: 12px 24px; border: 0; border-radius: 6px; background: #17834b; color: white; font: inherit; }
-    button:disabled { opacity: .5; }
+    * { box-sizing: border-box; }
+    html { background: #fafbfa; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+        env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+      color: #252a27;
+      font: 16px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    main {
+      width: 100%;
+      max-width: 424px;
+      margin: auto;
+      padding: 64px 28px;
+    }
+    .eyebrow {
+      margin: 0 0 16px;
+      color: #626b65;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .eyebrow::before {
+      content: "";
+      display: inline-block;
+      width: 18px;
+      height: 3px;
+      margin-right: 10px;
+      vertical-align: middle;
+      background: #e94f45;
+    }
+    h1 { margin: 0; font-size: 30px; line-height: 1.4; font-weight: 650; }
+    .authorization { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e7e3; }
+    #status { margin: 0; color: #626b65; font-size: 15px; line-height: 1.8; }
+    button {
+      display: block;
+      width: 100%;
+      min-height: 50px;
+      margin-top: 28px;
+      padding: 12px 20px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: #07883e;
+      color: #fff;
+      font: inherit;
+      font-weight: 600;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    [hidden] { display: none !important; }
+    @media (hover: hover) { button:hover:not(:disabled) { background: #067735; } }
+    button:active:not(:disabled) { background: #05682f; }
+    button:focus-visible { outline: 3px solid #252a27; outline-offset: 4px; }
+    button:disabled { background: #e1e7e3; color: #626b65; cursor: default; }
+    noscript { display: block; margin-top: 20px; color: #626b65; font-size: 14px; }
+    footer { flex-shrink: 0; padding: 20px 28px 24px; color: #777f79; text-align: center; font-size: 12px; }
+    @media (max-height: 480px) { main { padding-top: 32px; padding-bottom: 28px; } }
   </style>
   <script src="entry.js" defer></script>
 </head>
 <body>
   <main>
-    <h1>微信授权入口</h1>
-    <p id="status" role="status">正在检查入口</p>
-    <button id="continue" type="button" hidden>继续微信授权</button>
-    <noscript>请启用 JavaScript 后重新打开。</noscript>
+    <p class="eyebrow">微信授权入口</p>
+    <div class="authorization">
+      <p id="status" role="status">正在检查入口</p>
+      <button id="continue" type="button" hidden>继续微信授权</button>
+      <noscript>请启用 JavaScript 后重新打开。</noscript>
+    </div>
   </main>
 </body>
 </html>

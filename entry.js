@@ -21,7 +21,7 @@ function resolveEntry(location, userAgent, endpoint) {
     return { message: '请使用微信扫一扫打开此二维码' }
   }
   target.searchParams.set('state', state)
-  return { message: '请继续完成微信授权', url: target.href }
+  return { message: '正在前往微信授权...', url: target.href }
 }
 
 if (typeof document !== 'undefined') {
@@ -34,5 +34,6 @@ if (typeof document !== 'undefined') {
       button.disabled = true
       window.location.replace(result.url)
     })
+    window.location.replace(result.url)
   }
 }
