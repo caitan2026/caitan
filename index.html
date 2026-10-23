@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>微信授权入口</title>
+  <style>
+    body { margin: 0; background: #f6f7f9; color: #283241; font: 16px/1.6 system-ui, sans-serif; }
+    main { max-width: 480px; margin: 15vh auto 0; padding: 24px; text-align: center; overflow-wrap: anywhere; }
+    h1 { font-size: 24px; }
+    button { max-width: 100%; padding: 12px 24px; border: 0; border-radius: 6px; background: #17834b; color: white; font: inherit; }
+    button:disabled { opacity: .5; }
+  </style>
+  <script src="entry.js" defer></script>
+</head>
+<body>
+  <main>
+    <h1>微信授权入口</h1>
+    <p id="status" role="status">正在检查入口</p>
+    <button id="continue" type="button" hidden>继续微信授权</button>
+    <noscript>请启用 JavaScript 后重新打开。</noscript>
+  </main>
+</body>
+</html>
