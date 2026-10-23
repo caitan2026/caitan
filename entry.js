@@ -21,7 +21,7 @@ function resolveEntry(location, userAgent, endpoint) {
     return { message: '请使用微信扫一扫打开此二维码' }
   }
   target.searchParams.set('state', state)
-  return { message: '正在前往微信授权...', url: target.href }
+  return { message: '请点击下方按钮继续微信授权', url: target.href }
 }
 
 if (typeof document !== 'undefined') {
@@ -31,9 +31,10 @@ if (typeof document !== 'undefined') {
   if (result.url) {
     button.hidden = false
     button.addEventListener('click', () => {
+      if (button.disabled) return
       button.disabled = true
+      document.getElementById('status').textContent = '正在前往微信授权...'
       window.location.replace(result.url)
     })
-    window.location.replace(result.url)
   }
 }
