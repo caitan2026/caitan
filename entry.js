@@ -31,7 +31,7 @@ if (typeof document !== 'undefined') {
   if (result.url) {
     const progress = document.getElementById('countdown')
     button.disabled = true
-    button.hidden = false
+    button.hidden = true
     progress.hidden = false
     document.getElementById('status').textContent = '请稍候，3秒后可继续微信授权'
     const startedAt = performance.now()
@@ -40,6 +40,7 @@ if (typeof document !== 'undefined') {
       progress.value = elapsed
       if (elapsed >= 3000) {
         clearInterval(timer)
+        button.hidden = false
         button.disabled = false
         document.getElementById('status').textContent = result.message
       }
