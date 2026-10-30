@@ -52,6 +52,36 @@ function initContainer(doc, location, clock, configuredUrl) {
   let errors = 0
   let frameStarted = 0
   let timedOut = false
+  let stages = []
+  let handshakeTimer = null
+  const diagnosticOrigin = 'https://wxmp.caitan.vip'
+  const diagnosticSchema = {
+    handshake: [], 'page-load': ['hasMerchant', 'hasInvite', 'hasToken', 'hasTicket'],
+    'entry-missing': [], 'authorize-start': [], 'authorize-success': ['statusCode'],
+    'authorize-failure': ['statusCode'], 'oauth-check': ['validOauth'], 'oauth-navigate': [],
+    'callback-error': [], 'ticket-start': [], 'ticket-success': ['statusCode'],
+    'ticket-failure': ['statusCode'], 'enter-app': []
+  }
+  const receiveDiagnostic = (event) => {
+    try {
+      if (!frame || event.source !== frame.contentWindow || event.origin !== diagnosticOrigin || stages.length >= 64) return
+      const data = event.data
+      if (data?.type === 'caitan-login-diagnostic-ready' && data.version === 1 && Object.keys(data).length === 2) {
+        frame.contentWindow.postMessage({ type: 'caitan-login-diagnostic-enable', version: 1 }, diagnosticOrigin)
+        return
+      }
+      if (!data || data.type !== 'caitan-login-diagnostic' || data.version !== 1 || typeof data.stage !== 'string' ||
+          !Object.prototype.hasOwnProperty.call(diagnosticSchema, data.stage)) return
+      const fields = diagnosticSchema[data.stage]
+      if (Object.keys(data).length !== fields.length + 3 ||
+          !fields.every(key => key === 'statusCode'
+            ? data[key] === null || (Number.isInteger(data[key]) && data[key] >= 100 && data[key] <= 599)
+            : typeof data[key] === 'boolean')) return
+      stages.push(data.stage + fields.map(key => ' ' + key + '=' + String(data[key])).join(''))
+      if (data.stage === 'handshake') clock.clearTimeout(handshakeTimer)
+    } catch (_) {}
+  }
+  try { doc.defaultView?.addEventListener('message', receiveDiagnostic) } catch (_) {}
   const report = get('diagnostic-report')
   const copyStatus = get('copy-status')
   get('copy-diagnostics').addEventListener('click', async () => {
@@ -60,7 +90,7 @@ function initContainer(doc, location, clock, configuredUrl) {
     const system = /Android/i.test(ua) ? 'Android' : /iPhone|iPad|iPod/i.test(ua) ? 'iOS/iPadOS' : '其他或未识别'
     // 仅记录白名单状态，不读取跨域内容，也不收集 URL、存储或完整 UA。
     report.value = [
-      '容器版本：iframe-diag-1',
+      '容器版本：iframe-diag-2',
       '系统：' + system,
       '微信版本（UA）：' + wechatVersion,
       '入口邀请参数：' + (result.hasInvite ? '格式存在，未验签' : '未携带；内页历史存储未知'),
@@ -71,10 +101,11 @@ function initContainer(doc, location, clock, configuredUrl) {
       '十五秒提示已触发：' + (timedOut ? '是' : '否'),
       'sandbox：allow-scripts allow-same-origin allow-forms',
       'referrerpolicy：no-referrer',
+      '主 H5 脱敏阶段（最多64条）：' + (stages.length ? '\n' + stages.join('\n') : '未收到可信报告；不能据此判断原因'),
       '内页最终地址、内容、授权请求和登录结果：跨域不可读取；load 不代表成功'
     ].join('\n')
     report.hidden = false
-    copyStatus.textContent = '以下仅含容器状态；若未自动复制，请长按文本复制。'
+    copyStatus.textContent = '以下仅含容器状态与主 H5 脱敏阶段；若未自动复制，请长按文本复制。'
     try {
       await doc.defaultView.navigator.clipboard.writeText(report.value)
       copyStatus.textContent = '诊断信息已复制；不含链接、签名、邀请码或登录凭据。'
@@ -99,6 +130,7 @@ function initContainer(doc, location, clock, configuredUrl) {
 
   function stopFrame() {
     clock.clearTimeout(timeout)
+    clock.clearTimeout(handshakeTimer)
     frame = null
     get('frame-host').replaceChildren()
   }
@@ -109,6 +141,7 @@ function initContainer(doc, location, clock, configuredUrl) {
     attempts += 1
     loads = errors = 0
     timedOut = false
+    stages = []
     frameStarted = clock.now()
     report.hidden = true
     report.value = ''
@@ -123,6 +156,17 @@ function initContainer(doc, location, clock, configuredUrl) {
     current.addEventListener('load', () => {
       if (frame !== current) return
       loads += 1
+      clock.clearTimeout(handshakeTimer)
+      let remaining = 10
+      const enableDiagnostic = () => {
+        if (frame !== current) return
+        try {
+          current.contentWindow.postMessage({ type: 'caitan-login-diagnostic-enable', version: 1 }, diagnosticOrigin)
+        } catch (_) {}
+        // 登录路由可能在文档 load 后才完成动态加载，有限重试覆盖此时序。
+        if (--remaining > 0) handshakeTimer = clock.setTimeout(enableDiagnostic, 500)
+      }
+      enableDiagnostic()
       get('frame-status').textContent = '已收到页面加载事件，不能据此判断显示正常或授权成功'
     })
     current.addEventListener('error', () => {
