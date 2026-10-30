@@ -47,8 +47,9 @@ function initContainer(doc, location, clock, configuredUrl) {
   status.textContent = '请稍候，3秒后可打开应用'
   const started = clock.now()
   const interval = clock.setInterval(() => {
-    progress.value = Math.min(3000, clock.now() - started)
-    if (progress.value < 3000) return
+    const elapsed = Math.min(3000, clock.now() - started)
+    progress.value = elapsed
+    if (elapsed < 3000) return
     clock.clearInterval(interval)
     ready = true
     open.hidden = false
@@ -103,7 +104,10 @@ function initContainer(doc, location, clock, configuredUrl) {
 if (typeof document !== 'undefined') {
   initContainer(document, window.location, {
     now: () => performance.now(),
-    setInterval, clearInterval, setTimeout, clearTimeout
+    setInterval: (callback, delay) => window.setInterval(callback, delay),
+    clearInterval: id => window.clearInterval(id),
+    setTimeout: (callback, delay) => window.setTimeout(callback, delay),
+    clearTimeout: id => window.clearTimeout(id)
   }, H5_LOGIN_URL)
 }
 if (typeof module !== 'undefined') module.exports = { resolveH5, initContainer }
