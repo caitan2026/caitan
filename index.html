@@ -21,13 +21,15 @@
     progress { width: 100%; height: 8px; accent-color: #16735b; margin: 12px 0 24px; }
     #viewer { position: fixed; inset: 0; height: 100vh; height: 100dvh; display: flex; flex-direction: column; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); background: white; }
     .toolbar { flex: none; padding: 6px 10px; border-bottom: 1px solid #e4e9e6; }
-    .actions { display: flex; gap: 8px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; }
     .actions button { padding: 8px 12px; font-size: 14px; }
     #frame-status { margin: 5px 0 0; font-size: 12px; line-height: 1.5; }
+    #copy-status { margin: 0; font-size: 12px; line-height: 1.5; }
+    #diagnostic-report { width: 100%; height: 110px; margin-top: 6px; font-size: 12px; resize: vertical; }
     #frame-host { flex: 1; min-height: 0; }
     iframe { display: block; border: 0; width: 100%; height: 100%; background: white; }
   </style>
-  <script src="./container.js?v=timer-fix-1" defer></script>
+  <script src="./container.js?v=iframe-diag-1" defer></script>
 </head>
 <body>
   <main id="landing">
@@ -45,8 +47,11 @@
       <div class="actions">
         <button id="reload" type="button">重新加载</button>
         <button id="back" type="button">返回容器</button>
+        <button id="copy-diagnostics" type="button">复制诊断信息</button>
       </div>
       <p id="frame-status" role="status" aria-live="polite"></p>
+      <p id="copy-status" role="status" aria-live="polite"></p>
+      <textarea id="diagnostic-report" aria-label="脱敏诊断信息，可长按复制" readonly hidden></textarea>
     </header>
     <div id="frame-host"></div>
   </section>

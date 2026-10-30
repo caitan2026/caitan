@@ -28,7 +28,11 @@ function resolveH5(location, configuredUrl) {
   params.set('wechat_login', '1')
   if (target.hash) target.hash += '?' + params.toString()
   else target.search = params.toString()
-  return { url: target.href, message: '已准备好，请点击打开应用' }
+  return {
+    url: target.href,
+    hasInvite: Boolean(match),
+    message: match ? '已准备好，请点击打开应用' : '当前入口未携带邀请信息；可打开登录页，首次微信登录需使用完整推广链接'
+  }
 }
 
 function initContainer(doc, location, clock, configuredUrl) {
@@ -43,6 +47,42 @@ function initContainer(doc, location, clock, configuredUrl) {
   let ready = false
   let frame = null
   let timeout = null
+  let attempts = 0
+  let loads = 0
+  let errors = 0
+  let frameStarted = 0
+  let timedOut = false
+  const report = get('diagnostic-report')
+  const copyStatus = get('copy-status')
+  get('copy-diagnostics').addEventListener('click', async () => {
+    const ua = doc.defaultView?.navigator?.userAgent || ''
+    const wechatVersion = /MicroMessenger\/([\d.]+)/i.exec(ua)?.[1] || '未识别'
+    const system = /Android/i.test(ua) ? 'Android' : /iPhone|iPad|iPod/i.test(ua) ? 'iOS/iPadOS' : '其他或未识别'
+    // 仅记录白名单状态，不读取跨域内容，也不收集 URL、存储或完整 UA。
+    report.value = [
+      '容器版本：iframe-diag-1',
+      '系统：' + system,
+      '微信版本（UA）：' + wechatVersion,
+      '入口邀请参数：' + (result.hasInvite ? '格式存在，未验签' : '未携带；内页历史存储未知'),
+      '加载尝试次数：' + attempts,
+      '本次 load 事件数：' + loads,
+      '本次 error 事件数：' + errors,
+      '本次已等待秒数：' + Math.floor((clock.now() - frameStarted) / 1000),
+      '十五秒提示已触发：' + (timedOut ? '是' : '否'),
+      'sandbox：allow-scripts allow-same-origin allow-forms',
+      'referrerpolicy：no-referrer',
+      '内页最终地址、内容、授权请求和登录结果：跨域不可读取；load 不代表成功'
+    ].join('\n')
+    report.hidden = false
+    copyStatus.textContent = '以下仅含容器状态；若未自动复制，请长按文本复制。'
+    try {
+      await doc.defaultView.navigator.clipboard.writeText(report.value)
+      copyStatus.textContent = '诊断信息已复制；不含链接、签名、邀请码或登录凭据。'
+    } catch (_) {
+      report.focus()
+      report.select()
+    }
+  })
   progress.hidden = false
   status.textContent = '请稍候，3秒后可打开应用'
   const started = clock.now()
@@ -66,6 +106,13 @@ function initContainer(doc, location, clock, configuredUrl) {
   function loadFrame() {
     if (!ready) return
     stopFrame()
+    attempts += 1
+    loads = errors = 0
+    timedOut = false
+    frameStarted = clock.now()
+    report.hidden = true
+    report.value = ''
+    copyStatus.textContent = ''
     get('landing').hidden = true
     get('viewer').hidden = false
     get('frame-status').textContent = '正在打开内嵌页面；本页无法判断登录是否成功'
@@ -75,10 +122,12 @@ function initContainer(doc, location, clock, configuredUrl) {
     current.setAttribute('referrerpolicy', 'no-referrer')
     current.addEventListener('load', () => {
       if (frame !== current) return
+      loads += 1
       get('frame-status').textContent = '已收到页面加载事件，不能据此判断显示正常或授权成功'
     })
     current.addEventListener('error', () => {
       if (frame !== current) return
+      errors += 1
       get('frame-status').textContent = '收到页面加载异常，可手动重新加载；跨域错误无法可靠检测'
     })
     frame = current
@@ -86,7 +135,10 @@ function initContainer(doc, location, clock, configuredUrl) {
     get('frame-host').replaceChildren(current)
     // 即使收到 load，也无法确认跨域页面内容，因此仍保留超时提示。
     timeout = clock.setTimeout(() => {
-      if (frame === current) get('frame-status').textContent = '无法确认页面是否正常显示'
+      if (frame === current) {
+        timedOut = true
+        get('frame-status').textContent = '无法确认页面是否正常显示；若白屏，可复制诊断信息'
+      }
     }, 15000)
     get('reload').focus()
   }
